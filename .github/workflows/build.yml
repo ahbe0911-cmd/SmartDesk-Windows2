@@ -3,19 +3,43 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
       - name: Restore
         run: dotnet restore
+
       - name: Publish Windows x64
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+
       - uses: actions/upload-artifact@v4
         with:
           name: SmartDesk-Windows-x64
           path: bin/Release/net8.0-windows/win-x64/publish/
+
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
+
+      - name: Create 16x9 SmartDesk preview
+        run: |
+          chromium --headless --no-sandbox --disable-gpu --hide-scrollbars --window-size=1600,900 --screenshot=SmartDesk-Preview.png "${{ github.workspace }}/preview.html"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SmartDesk-Preview-16x9
+          path: SmartDesk-Preview.png
